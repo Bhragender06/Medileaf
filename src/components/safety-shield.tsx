@@ -98,9 +98,10 @@ function WarningCard({ w }: { w: InteractionWarning }) {
   );
 }
 
-export function SafetyReportView({ report, loading, error, onRetry, title = "Safety Shield" }: {
-  report: SafetyReport | null; loading: boolean; error: string; onRetry?: () => void; title?: string;
+export function SafetyReportView({ report, loading, error, onRetry, title = "Safety Shield", compact = false }: {
+  report: SafetyReport | null; loading: boolean; error: string; onRetry?: (() => void) | undefined; title?: string | undefined; compact?: boolean;
 }) {
+  const [open, setOpen] = useState(!compact);
   if (loading)
     return (
       <section aria-live="polite" className="surface flex items-center gap-4 p-6">
@@ -135,7 +136,12 @@ export function SafetyReportView({ report, loading, error, onRetry, title = "Saf
           <button className="btn btn-ghost min-h-11 px-3" onClick={() => window.print()} aria-label="Print for my doctor"><Printer className="h-4 w-4" /></button>
         </div>
       </div>
-      {report.warnings.length > 0 && <ul className="mt-6 space-y-3">{report.warnings.map((w, i) => <WarningCard key={i} w={w} />)}</ul>}
+      {report.warnings.length > 0 && compact && (
+        <button className="mt-4 font-semibold text-primary underline print:hidden" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+          {open ? "Hide details" : `See ${report.warnings.length} detail${report.warnings.length === 1 ? "" : "s"}`}
+        </button>
+      )}
+      {report.warnings.length > 0 && open && <ul className="mt-6 space-y-3">{report.warnings.map((w, i) => <WarningCard key={i} w={w} />)}</ul>}
       <p className="mt-5 text-xs text-muted-foreground">
         AI-assisted check, not medical advice. Don’t stop or change a prescribed medicine without talking to your doctor or pharmacist.
       </p>
@@ -144,7 +150,9 @@ export function SafetyReportView({ report, loading, error, onRetry, title = "Saf
 }
 
 /** Self-running shield: checks `incoming` against `current` (or the current list alone) whenever the list changes. */
-export function SafetyShield({ current, incoming = [], title }: { current: SafetyMed[]; incoming?: SafetyMed[]; title?: string }) {
+export function SafetyShield({ current, incoming = [], title, compact = false }: {
+  current: SafetyMed[]; incoming?: SafetyMed[]; title?: string | undefined; compact?: boolean;
+}) {
   const { run, report, loading, error } = useSafetyCheck();
   const key = `${regimenKey(current)}>>${regimenKey(incoming)}`;
   const latest = useRef({ current, incoming });
@@ -156,6 +164,6 @@ export function SafetyShield({ current, incoming = [], title }: { current: Safet
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, run]);
   if (current.length + incoming.length === 0) return null;
-  return <SafetyReportView report={report} loading={loading || (!report && !error)} error={error} title={title}
+  return <SafetyReportView report={report} loading={loading || (!report && !error)} error={error} title={title} compact={compact}
     onRetry={() => void run(latest.current.current, latest.current.incoming, { force: true })} />;
 }
