@@ -4,6 +4,7 @@ import { AppShell, Confirm, Empty } from "@/components/site";
 import { MedForm, validateDraft, type Draft } from "@/components/med-form";
 import { daysLeft, fmtTime, removeMedicine, setState, useStore } from "@/lib/store";
 import { Button } from "@/components/ui/button";
+import { JargonBuster } from "@/components/jargon-buster";
 
 export const Route = createFileRoute("/medications/$id")({
   head: () => ({
@@ -83,6 +84,14 @@ function Detail() {
             </div>
           </section>
         </div>
+      )}
+
+      {!edit && (
+        <section className="surface mt-10 p-6 md:p-8">
+          <h2 className="text-3xl">🧒 Explain like I'm 10</h2>
+          <p className="mt-1 text-muted-foreground">See this medicine in plain words and on a simple daily timeline.</p>
+          <div className="mt-5"><JargonBuster key={m.id} showSamples={false} initialText={`${m.name} ${m.strength} ${m.form}. ${m.dose}, ${m.route}, ${m.frequency}. ${m.instructions || ""}${m.durationDays ? ` for ${m.durationDays} days` : ""}`} /></div>
+        </section>
       )}
 
       <section className="mt-10">

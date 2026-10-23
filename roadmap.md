@@ -11,3 +11,4 @@
 - [x] AI Safety Shield: drug/food/duplicate interaction check on upload, add medicine and Today page
 - [x] Snap & Count AI photo counting on Rewards return form
 - [x] Voice assistant (English/Hindi mic helper)
+- [x] Explain like I'm 10 translator (/explain + medicine page)
