@@ -1,8 +1,10 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { AppShell, Confirm, PageTitle } from "@/components/site";
 import { draftToMed, MedForm, validateDraft, type Draft, type Uncertain } from "@/components/med-form";
-import { setState, uid } from "@/lib/store";
+import { setState, uid, useStore } from "@/lib/store";
+import { SafetyShield } from "@/components/safety-shield";
+import type { SafetyReport } from "@/lib/safety-logic";
 import { supabase } from "@/integrations/supabase/client";
 import { useServerFn } from "@tanstack/react-start";
 import { extractPrescription } from "@/lib/extract.functions";
@@ -34,6 +36,9 @@ function Upload() {
   const [error, setError] = useState("");
   const [confirmAll, setConfirmAll] = useState(false);
   const [rxId, setRxId] = useState<string | null>(null);
+  const [safety, setSafety] = useState<SafetyReport | null>(null);
+  const allMeds = useStore((s) => s.meds);
+  const activeMeds = useMemo(() => allMeds.filter((m) => m.status === "active"), [allMeds]);
 
   function pick(f: File | undefined) {
     setError("");
@@ -136,6 +141,8 @@ function Upload() {
                 </> : <button className="font-semibold text-primary underline" onClick={() => update(it.key, { state: "pending" })}>{it.state === "rejected" ? "Restore" : "Edit again"}</button>}
               </article>
             ))}
+            <SafetyShield title="Safety check" current={activeMeds} onReport={setSafety}
+              incoming={items.filter((i) => i.state !== "rejected").map((i) => i.draft)} />
             {error && <p role="alert" className="font-semibold text-destructive">{error}</p>}
             <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl bg-muted p-5">
               <span>{confirmed} confirmed · {pending} still to review</span>
@@ -143,7 +150,9 @@ function Upload() {
             </div>
           </div>
         </div>
-        <Confirm open={confirmAll} title="Start this plan?" body={`${confirmed} medicine(s) will be added with reminders at the times you set.`} confirmLabel="Start plan"
+        <Confirm open={confirmAll} title="Start this plan?" danger={safety?.level === "danger"}
+          body={`${confirmed} medicine(s) will be added with reminders at the times you set.${safety?.level === "danger" ? " The safety check found a serious warning — please talk to your doctor or pharmacist before you start." : ""}`}
+          confirmLabel={safety?.level === "danger" ? "Start anyway" : "Start plan"}
           onConfirm={activate} onCancel={() => setConfirmAll(false)} />
       </>
     );
