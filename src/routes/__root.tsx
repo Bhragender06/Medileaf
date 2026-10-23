@@ -12,6 +12,7 @@ import { useEffect, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { AppLoader } from "../components/loader";
+import { VoiceAssistant } from "../components/voice-assistant";
 import { startCloudSync } from "../lib/cloud";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 
@@ -125,6 +126,7 @@ function RootComponent() {
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
       <AppLoader />
       <Outlet />
+      <VoiceAssistant />
     </QueryClientProvider>
   );
 }
