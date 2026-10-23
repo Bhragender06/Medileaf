@@ -17,6 +17,7 @@ import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as RefillsRouteImport } from './routes/refills'
 import { Route as RemindersRouteImport } from './routes/reminders'
+import { Route as RewardsRouteImport } from './routes/rewards'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as UploadRouteImport } from './routes/upload'
@@ -64,6 +65,11 @@ const RemindersRoute = RemindersRouteImport.update({
   path: '/reminders',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RewardsRoute = RewardsRouteImport.update({
+  id: '/rewards',
+  path: '/rewards',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -104,6 +110,7 @@ export interface FileRoutesByFullPath {
   '/profile': typeof ProfileRoute
   '/refills': typeof RefillsRoute
   '/reminders': typeof RemindersRoute
+  '/rewards': typeof RewardsRoute
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
   '/upload': typeof UploadRoute
@@ -120,6 +127,7 @@ export interface FileRoutesByTo {
   '/profile': typeof ProfileRoute
   '/refills': typeof RefillsRoute
   '/reminders': typeof RemindersRoute
+  '/rewards': typeof RewardsRoute
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
   '/upload': typeof UploadRoute
@@ -137,6 +145,7 @@ export interface FileRoutesById {
   '/profile': typeof ProfileRoute
   '/refills': typeof RefillsRoute
   '/reminders': typeof RemindersRoute
+  '/rewards': typeof RewardsRoute
   '/settings': typeof SettingsRoute
   '/signup': typeof SignupRoute
   '/upload': typeof UploadRoute
@@ -155,6 +164,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/refills'
     | '/reminders'
+    | '/rewards'
     | '/settings'
     | '/signup'
     | '/upload'
@@ -171,6 +181,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/refills'
     | '/reminders'
+    | '/rewards'
     | '/settings'
     | '/signup'
     | '/upload'
@@ -187,6 +198,7 @@ export interface FileRouteTypes {
     | '/profile'
     | '/refills'
     | '/reminders'
+    | '/rewards'
     | '/settings'
     | '/signup'
     | '/upload'
@@ -204,6 +216,7 @@ export interface RootRouteChildren {
   ProfileRoute: typeof ProfileRoute
   RefillsRoute: typeof RefillsRoute
   RemindersRoute: typeof RemindersRoute
+  RewardsRoute: typeof RewardsRoute
   SettingsRoute: typeof SettingsRoute
   SignupRoute: typeof SignupRoute
   UploadRoute: typeof UploadRoute
@@ -270,6 +283,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RemindersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/rewards': {
+      id: '/rewards'
+      path: '/rewards'
+      fullPath: '/rewards'
+      preLoaderRoute: typeof RewardsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings': {
       id: '/settings'
       path: '/settings'
@@ -324,6 +344,7 @@ const rootRouteChildren: RootRouteChildren = {
   ProfileRoute: ProfileRoute,
   RefillsRoute: RefillsRoute,
   RemindersRoute: RemindersRoute,
+  RewardsRoute: RewardsRoute,
   SettingsRoute: SettingsRoute,
   SignupRoute: SignupRoute,
   UploadRoute: UploadRoute,

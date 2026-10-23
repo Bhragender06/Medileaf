@@ -5,9 +5,10 @@ import { useMemo, useState, type ReactNode } from "react";
 import { AppShell, Confirm, Empty, PageTitle } from "@/components/site";
 import { useIsAdmin } from "@/lib/use-admin";
 import {
-  getAdminOrders, getAdminUploads, getAdminUsers, getRefillAlerts, getUploadLink, setUserSuspended, updateOrderStatus,
+  getAdminOrders, getAdminRecycling, getAdminUploads, getAdminUsers, getRefillAlerts, getUploadLink, setUserSuspended, updateClaimStatus, updateOrderStatus, verifyReturn,
 } from "@/lib/admin.functions";
 import { ORDER_STATUSES, ORDER_STATUS_LABEL, type OrderStatus } from "@/lib/admin-logic";
+import { CLAIM_STATUSES, CLAIM_STATUS_LABEL, REWARD_TIERS, SEEDS, type ClaimStatus } from "@/lib/rewards-logic";
 
 export const Route = createFileRoute("/admin")({
   head: () => ({
@@ -28,6 +29,7 @@ const tabs = [
   { id: "users", label: "Users" },
   { id: "uploads", label: "Prescription uploads" },
   { id: "refills", label: "Refill alerts" },
+  { id: "eco", label: "Eco & recycling" },
 ] as const;
 type Tab = (typeof tabs)[number]["id"];
 
@@ -38,7 +40,9 @@ function useAdminData() {
   const fUsers = useServerFn(getAdminUsers);
   const fUploads = useServerFn(getAdminUploads);
   const fAlerts = useServerFn(getRefillAlerts);
+  const fEco = useServerFn(getAdminRecycling);
   return {
+    eco: useQuery({ queryKey: ["admin", "eco"], queryFn: () => fEco() }),
     orders: useQuery({ queryKey: ["admin", "orders"], queryFn: () => fOrders() }),
     users: useQuery({ queryKey: ["admin", "users"], queryFn: () => fUsers() }),
     uploads: useQuery({ queryKey: ["admin", "uploads"], queryFn: () => fUploads() }),
@@ -73,6 +77,7 @@ function AdminBody({ tab, go }: { tab: Tab; go: (t: Tab) => void }) {
   if (tab === "orders") return <Orders q={d.orders} />;
   if (tab === "users") return <Users q={d.users} />;
   if (tab === "uploads") return <Uploads q={d.uploads} />;
+  if (tab === "eco") return <Eco q={d.eco} />;
   return <Alerts q={d.alerts} />;
 }
 
@@ -93,6 +98,7 @@ function Overview({ d, go }: { d: ReturnType<typeof useAdminData>; go: (t: Tab) 
     { label: "Active medicines", value: users.reduce((n, u) => n + u.activeMeds, 0), tab: "users", note: "across all users" },
     { label: "Prescription uploads", value: d.uploads.data?.length ?? 0, tab: "uploads", note: `${(d.uploads.data ?? []).filter((u) => u.status === "failed").length} couldn't be read` },
     { label: "Refill alerts", value: d.alerts.data?.length ?? 0, tab: "refills", note: "running low now" },
+    { label: "Parcels to check", value: (d.eco.data?.returns ?? []).filter((r) => r.status === "pending").length, tab: "eco", note: `${(d.eco.data?.claims ?? []).filter((c) => c.status === "processing").length} seed orders to send` },
   ];
   return (
     <>
@@ -256,5 +262,75 @@ function Alerts({ q }: { q: Q<AlertRow[]> }) {
         </ul>
       )}
     </ListState>
+  );
+}
+
+type EcoData = Awaited<ReturnType<typeof getAdminRecycling>>;
+function Eco({ q }: { q: Q<EcoData> }) {
+  const [search, setSearch] = useState("");
+  const [counts, setCounts] = useState<Record<string, string>>({});
+  const qc = useQueryClient();
+  const verify = useServerFn(verifyReturn);
+  const setClaim = useServerFn(updateClaimStatus);
+  const refresh = () => qc.invalidateQueries({ queryKey: ["admin", "eco"] });
+  const mv = useMutation({ mutationFn: (v: { id: string; count: number; reject?: boolean }) => verify({ data: v }), onSuccess: refresh });
+  const mc = useMutation({ mutationFn: (v: { id: string; status: ClaimStatus }) => setClaim({ data: v }), onSuccess: refresh });
+  if (q.isLoading) return <p className="text-muted-foreground">Loading…</p>;
+  if (q.error) return <p role="alert" className="rounded-md bg-warning-soft p-4">Couldn't load this list: {q.error.message}</p>;
+  const term = search.trim().toLowerCase();
+  const match = (r: { customer: string; email: string; code?: string }) => !term || `${r.customer} ${r.email} ${r.code ?? ""}`.toLowerCase().includes(term);
+  const returns = (q.data?.returns ?? []).filter(match).sort((a, b) => Number(b.status === "pending") - Number(a.status === "pending"));
+  const claims = (q.data?.claims ?? []).filter(match);
+  const err = mv.error ?? mc.error;
+  return (
+    <>
+      <input className="field mb-4 max-w-sm" placeholder="Search name, email or return code (ML-…)" aria-label="Search parcels" value={search} onChange={(e) => setSearch(e.target.value)} />
+      {err && <p role="alert" className="mb-4 rounded-md bg-warning-soft p-3 text-sm">{err.message}</p>}
+      <h2 className="text-3xl">Incoming parcels</h2>
+      {returns.length === 0 ? <div className="mt-4"><Empty title="No parcels" body="Return notices appear here when people send wrappers or expired medicines." /></div> : (
+        <ul className="mt-4 divide-y rounded-xl border bg-card">
+          {returns.map((r) => (
+            <li key={r.id} className="flex flex-wrap items-center gap-4 px-5 py-4">
+              <div className="min-w-56 flex-1">
+                <div className="font-semibold">{r.code} · {r.customer} <span className="font-normal text-muted-foreground">{r.email}</span></div>
+                <div className="text-sm text-muted-foreground">Says: {r.wrappers} wrappers · {r.bottles} bottles · {r.expired} expired · sent {fmtDate(r.createdAt)}
+                  {r.tracking && ` · tracking ${r.tracking}`} · lifetime total {r.userTotal}</div>
+                {r.note && <div className="text-sm text-muted-foreground">Note: {r.note}</div>}
+              </div>
+              {r.status === "pending" ? (
+                <div className="flex flex-wrap items-center gap-2">
+                  <input className="field w-28" type="number" min={0} max={1500} aria-label={`Items counted in ${r.code}`}
+                    value={counts[r.id] ?? String(r.declared)} onChange={(e) => setCounts({ ...counts, [r.id]: e.target.value })} />
+                  <button className="btn btn-green" disabled={mv.isPending} onClick={() => mv.mutate({ id: r.id, count: Number(counts[r.id] ?? r.declared) })}>Confirm & credit points</button>
+                  <button className="btn btn-ghost" disabled={mv.isPending} onClick={() => mv.mutate({ id: r.id, count: 0, reject: true })}>Not accepted</button>
+                </div>
+              ) : (
+                <span className={`rounded-full px-3 py-1 text-sm font-semibold ${r.status === "rejected" ? "bg-warning-soft" : "bg-muted"}`}>
+                  {r.status === "verified" ? `Credited ${r.verifiedCount} items` : "Not accepted"}
+                </span>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+      <h2 className="mt-12 text-3xl">Seed reward orders</h2>
+      {claims.length === 0 ? <div className="mt-4"><Empty title="No seed orders yet" body="Seed requests appear here once someone reaches 50 checked items." /></div> : (
+        <ul className="mt-4 divide-y rounded-xl border bg-card">
+          {claims.map((c) => (
+            <li key={c.id} className="flex flex-wrap items-center gap-4 px-5 py-4">
+              <div className="min-w-56 flex-1">
+                <div className="font-semibold">{REWARD_TIERS.find((t) => t.items === c.tier)?.name} · {c.customer} <span className="font-normal text-muted-foreground">{c.email}</span></div>
+                <div className="text-sm text-muted-foreground">Seeds: {c.seeds.map((id) => SEEDS.find((s) => s.id === id)?.name ?? id).join(", ")} · {fmtDate(c.createdAt)}</div>
+                <div className="text-sm text-muted-foreground">Ship to: {c.shipName}, {c.shipAddress}{c.shipPhone && ` · ${c.shipPhone}`}</div>
+              </div>
+              <select className="field max-w-48" aria-label={`Status for seed order from ${c.customer}`} value={c.status} disabled={mc.isPending}
+                onChange={(e) => mc.mutate({ id: c.id, status: e.target.value as ClaimStatus })}>
+                {CLAIM_STATUSES.map((s) => <option key={s} value={s}>{CLAIM_STATUS_LABEL[s]}</option>)}
+              </select>
+            </li>
+          ))}
+        </ul>
+      )}
+    </>
   );
 }
