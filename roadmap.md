@@ -8,3 +8,4 @@
 - [x] Remove medicines no longer taken from the daily plan, keeping history
 - [x] Admin panel: orders, users (suspend), overview, prescription uploads, refill alerts
 - [x] Eco rewards: wrapper/expired-med returns, 50-item seed counter, admin parcel checks + seed orders
+- [x] AI Safety Shield: drug/food/duplicate interaction check on upload, add medicine and Today page
