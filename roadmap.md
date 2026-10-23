@@ -6,3 +6,4 @@
 - [x] Real accounts synced across devices (email + Google)
 - [x] AI text extraction from prescription uploads
 - [x] Remove medicines no longer taken from the daily plan, keeping history
+- [x] Admin panel: orders, users (suspend), overview, prescription uploads, refill alerts
