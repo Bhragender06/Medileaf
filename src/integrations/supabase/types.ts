@@ -618,6 +618,62 @@ export type Database = {
         }
         Relationships: []
       }
+      recycling_submissions: {
+        Row: {
+          bottles: number
+          created_at: string
+          expired: number
+          id: string
+          note: string
+          status: string
+          tracking_number: string
+          updated_at: string
+          user_id: string
+          verified_at: string | null
+          verified_by: string | null
+          verified_count: number | null
+          wrappers: number
+        }
+        Insert: {
+          bottles?: number
+          created_at?: string
+          expired?: number
+          id?: string
+          note?: string
+          status?: string
+          tracking_number?: string
+          updated_at?: string
+          user_id: string
+          verified_at?: string | null
+          verified_by?: string | null
+          verified_count?: number | null
+          wrappers?: number
+        }
+        Update: {
+          bottles?: number
+          created_at?: string
+          expired?: number
+          id?: string
+          note?: string
+          status?: string
+          tracking_number?: string
+          updated_at?: string
+          user_id?: string
+          verified_at?: string | null
+          verified_by?: string | null
+          verified_count?: number | null
+          wrappers?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recycling_submissions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       refills: {
         Row: {
           created_at: string
@@ -729,6 +785,53 @@ export type Database = {
           },
           {
             foreignKeyName: "reminders_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reward_claims: {
+        Row: {
+          created_at: string
+          id: string
+          seeds: string[]
+          ship_address: string
+          ship_name: string
+          ship_phone: string
+          status: string
+          tier: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          seeds?: string[]
+          ship_address?: string
+          ship_name?: string
+          ship_phone?: string
+          status?: string
+          tier: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          seeds?: string[]
+          ship_address?: string
+          ship_name?: string
+          ship_phone?: string
+          status?: string
+          tier?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reward_claims_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
