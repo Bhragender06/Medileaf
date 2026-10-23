@@ -31,6 +31,7 @@ const nav = [
   { to: "/upload", label: "Upload" },
   { to: "/refills", label: "Refills" },
   { to: "/reminders", label: "Reminders" },
+  { to: "/rewards", label: "Rewards" },
   { to: "/settings", label: "Settings" },
   { to: "/profile", label: "Profile" },
 ] as const;
