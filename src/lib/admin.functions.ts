@@ -63,7 +63,9 @@ export const updateOrderStatus = createServerFn({ method: "POST" })
   })
   .handler(async ({ data, context }) => {
     const db = await adminClient(context);
-    const order = must(await db.from("orders").update({ status: data.status, updated_at: new Date().toISOString() }).eq("id", data.orderId).select("user_id").maybeSingle());
+    const res = await db.from("orders").update({ status: data.status, updated_at: new Date().toISOString() }).eq("id", data.orderId).select("user_id").maybeSingle();
+    if (res.error) throw new Error(res.error.message);
+    const order = res.data;
     if (!order) throw new Error("Order not found");
     await db.from("audit_logs").insert({ user_id: order.user_id, actor_user_id: context.userId, action: `Order marked ${data.status}`, resource_type: "order", resource_id: data.orderId });
     return { ok: true };
@@ -135,7 +137,8 @@ export const getUploadLink = createServerFn({ method: "POST" })
   })
   .handler(async ({ data, context }) => {
     const db = await adminClient(context);
-    const row = must(await db.from("prescriptions").select("image_storage_key").eq("id", data.id).maybeSingle());
+    const { data: row, error } = await db.from("prescriptions").select("image_storage_key").eq("id", data.id).maybeSingle();
+    if (error) throw new Error(error.message);
     if (!row?.image_storage_key) throw new Error("No file for this upload");
     const signed = await db.storage.from("prescriptions").createSignedUrl(row.image_storage_key, 300);
     if (signed.error) throw new Error(signed.error.message);
