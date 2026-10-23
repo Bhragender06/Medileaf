@@ -32,7 +32,7 @@ export function PlainReportView({ report }: { report: PlainReport }) {
   const asNeeded = report.medicines.filter((m) => m.asNeeded);
   return (
     <div className="space-y-6">
-      <p className="rounded-xl bg-success-soft p-4 text-lg font-semibold">{report.summary}</p>
+      <p className="rounded-xl bg-primary/10 p-4 text-lg font-semibold">{report.summary}</p>
 
       {report.timeline.length > 0 && (
         <section>
