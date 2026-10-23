@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { AppShell, Confirm, Empty, PageTitle } from "@/components/site";
 import { Button } from "@/components/ui/button";
+import { SafetyShield } from "@/components/safety-shield";
 import { daysLeft, fmtTime, logDose, needsRefill, removeMedicine, today, useStore, type DoseStatus, type Medication } from "@/lib/store";
 
 export const Route = createFileRoute("/dashboard")({
@@ -75,6 +76,8 @@ function Dashboard() {
           <Link to="/refills" className="btn btn-green">Review refills</Link>
         </div>
       )}
+
+      <div className="mt-6"><SafetyShield current={meds} compact title="Safety Shield" /></div>
 
       <h2 className="mt-14 text-4xl">Today’s schedule</h2>
       <ul className="mt-6 space-y-3">
