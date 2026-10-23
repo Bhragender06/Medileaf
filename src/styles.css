@@ -115,3 +115,5 @@
   .kinetic-char, .loader-logo { animation: none; opacity: 1; transform: none; }
   .loader-screen { transition: none; }
 }
+
+@keyframes scan { 0%,100% { transform: translateY(0); } 50% { transform: translateY(var(--scan-h, 300px)); } }
