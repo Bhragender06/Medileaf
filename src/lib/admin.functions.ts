@@ -3,6 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
 import { isOrderStatus, normalizeOrderStatus, refillAlerts, type OrderStatus } from "./admin-logic";
+import { isClaimStatus, returnCode, type ClaimStatus } from "./rewards-logic";
 
 type Ctx = { supabase: SupabaseClient<Database>; userId: string };
 
@@ -168,4 +169,67 @@ export const getRefillAlerts = createServerFn({ method: "GET" })
       };
     });
     return refillAlerts(rows);
+  });
+
+export const getAdminRecycling = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }) => {
+    const db = await adminClient(context);
+    const [subs, claims, people] = await Promise.all([
+      db.from("recycling_submissions").select("*").order("created_at", { ascending: false }).limit(500).then(must),
+      db.from("reward_claims").select("*").order("created_at", { ascending: false }).limit(500).then(must),
+      loadPeople(db),
+    ]);
+    const totals = new Map<string, number>();
+    for (const s of subs) if (s.status === "verified") totals.set(s.user_id, (totals.get(s.user_id) ?? 0) + (s.verified_count ?? 0));
+    const who = (id: string) => { const p = people.get(id); return { customer: p?.name || p?.email || "Unknown", email: p?.email ?? "" }; };
+    return {
+      returns: subs.map((s) => ({
+        id: s.id, code: returnCode(s.id), userId: s.user_id, ...who(s.user_id), wrappers: s.wrappers, bottles: s.bottles, expired: s.expired,
+        declared: s.wrappers + s.bottles + s.expired, tracking: s.tracking_number, note: s.note, status: s.status,
+        verifiedCount: s.verified_count, createdAt: s.created_at, verifiedAt: s.verified_at, userTotal: totals.get(s.user_id) ?? 0,
+      })),
+      claims: claims.map((c) => ({
+        id: c.id, userId: c.user_id, ...who(c.user_id), tier: c.tier, seeds: c.seeds, shipName: c.ship_name, shipAddress: c.ship_address,
+        shipPhone: c.ship_phone, status: isClaimStatus(c.status) ? c.status : "processing", createdAt: c.created_at,
+      })),
+    };
+  });
+
+export const verifyReturn = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { id: string; count: number; reject?: boolean }) => {
+    if (typeof input?.id !== "string" || !input.id) throw new Error("Missing parcel");
+    const n = Number(input.count);
+    const reject = input.reject === true;
+    if (!reject && (!Number.isInteger(n) || n < 0 || n > 1500)) throw new Error("Enter the number of items you counted");
+    return { id: input.id, count: reject ? 0 : n, reject };
+  })
+  .handler(async ({ data, context }) => {
+    const db = await adminClient(context);
+    // Only parcels still waiting can be credited, so points are never added twice.
+    const res = await db.from("recycling_submissions").update({
+      status: data.reject ? "rejected" : "verified", verified_count: data.count, verified_at: new Date().toISOString(),
+      verified_by: context.userId, updated_at: new Date().toISOString(),
+    }).eq("id", data.id).eq("status", "pending").select("user_id").maybeSingle();
+    if (res.error) throw new Error(res.error.message);
+    if (!res.data) throw new Error("This parcel was already checked");
+    await db.from("audit_logs").insert({ user_id: res.data.user_id, actor_user_id: context.userId, action: data.reject ? "Recycling parcel not accepted" : `Recycling parcel credited ${data.count} items`, resource_type: "recycling_submission", resource_id: data.id });
+    return { ok: true };
+  });
+
+export const updateClaimStatus = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { id: string; status: ClaimStatus }) => {
+    if (typeof input?.id !== "string" || !input.id) throw new Error("Missing seed order");
+    if (!isClaimStatus(input.status)) throw new Error("Unknown status");
+    return input;
+  })
+  .handler(async ({ data, context }) => {
+    const db = await adminClient(context);
+    const res = await db.from("reward_claims").update({ status: data.status, updated_at: new Date().toISOString() }).eq("id", data.id).select("user_id").maybeSingle();
+    if (res.error) throw new Error(res.error.message);
+    if (!res.data) throw new Error("Seed order not found");
+    await db.from("audit_logs").insert({ user_id: res.data.user_id, actor_user_id: context.userId, action: `Seed order marked ${data.status}`, resource_type: "reward_claim", resource_id: data.id });
+    return { ok: true };
   });
