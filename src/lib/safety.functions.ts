@@ -27,7 +27,7 @@ Rules:
 - Only report well-established, clinically recognised issues. Never invent interactions. If unsure, leave it out.
 - severity: "severe" = avoid combination / contraindicated / needs a doctor before taking; "moderate" = can be taken with care, timing or monitoring; "dietary" = food or drink conflict; "info" = minor, good-to-know tip.
 - kind: "drug", "food", "duplicate" or "lifestyle".
-- medicines: the medicine names involved, exactly as given.
+- medicines: only the short medicine names involved (e.g. "Warfarin"), without strength or dose.
 - title: short, e.g. "Warfarin + Ibuprofen: bleeding risk".
 - explanation: 1-2 plain-English sentences a non-medical person understands (why it matters).
 - advice: one practical step, e.g. "Take them at least 2 hours apart."

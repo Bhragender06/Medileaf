@@ -62,7 +62,7 @@ export function normalizeWarnings(raw: unknown[], max = 12): InteractionWarning[
     const title = String(w["title"] ?? "").trim();
     if (!severity || !title) continue;
     const kind = KINDS.includes(w["kind"] as WarningKind) ? (w["kind"] as WarningKind) : "drug";
-    const medicines = Array.isArray(w["medicines"]) ? w["medicines"].map((m) => String(m).trim()).filter(Boolean).slice(0, 4) : [];
+    const medicines = Array.isArray(w["medicines"]) ? w["medicines"].map((m) => String(m).split(",")[0]!.trim()).filter(Boolean).slice(0, 4) : [];
     out.push({
       severity, kind, medicines, title: title.slice(0, 140),
       explanation: String(w["explanation"] ?? "").trim().slice(0, 600),
