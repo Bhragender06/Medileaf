@@ -45,9 +45,10 @@ export function canClaim(total: number, tier: RewardTier, claimed: number[]) {
 /** Progress toward the next tier the user hasn't reached yet. */
 export function nextGoal(total: number) {
   const next = REWARD_TIERS.find((t) => total < t.items);
-  if (!next) return { goal: REWARD_TIERS[REWARD_TIERS.length - 1].items, remaining: 0, name: null as string | null, start: 0 };
+  const top = REWARD_TIERS[REWARD_TIERS.length - 1]!.items;
+  if (!next) return { goal: top, remaining: 0, name: null as string | null, start: 0 };
   const idx = REWARD_TIERS.indexOf(next);
-  const start = idx === 0 ? 0 : REWARD_TIERS[idx - 1].items;
+  const start = idx === 0 ? 0 : REWARD_TIERS[idx - 1]!.items;
   return { goal: next.items, remaining: next.items - total, name: next.name as string, start };
 }
 
