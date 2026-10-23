@@ -47,7 +47,7 @@ function Reorder() {
         <button className="btn btn-primary mt-8 w-full" onClick={() => setAsk(true)}>Review order</button>
       </section>
       <Confirm open={ask} title="Send this order?" body={`${m.name} ${m.strength} × ${qty} to ${pharmacy}. Nothing is charged until the pharmacy confirms.`} confirmLabel="Send order"
-        onCancel={() => setAsk(false)} onConfirm={() => { setState((s) => ({ ...s, orders: [{ id: uid(), medId: id, qty, pharmacy, createdAt: new Date().toISOString(), status: "placed" }, ...s.orders] }), `Reordered ${m.name}`); setAsk(false); setDone(true); }} />
+        onCancel={() => setAsk(false)} onConfirm={() => { setState((s) => ({ ...s, orders: [{ id: uid(), medId: id, qty, pharmacy, createdAt: new Date().toISOString(), status: "submitted" }, ...s.orders] }), `Reordered ${m.name}`); setAsk(false); setDone(true); }} />
     </div>
   );
 }

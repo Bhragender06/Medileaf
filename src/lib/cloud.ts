@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { normalizeOrderStatus } from "./admin-logic";
 import { daysLeft, getState, onPersist, replaceState, signOut as clearLocal, emptyState, type DoseLog, type Medication, type Order, type State } from "./store";
 
 /**
@@ -74,7 +75,7 @@ async function loadAccount(u: { id: string; email?: string | undefined }) {
     logs: (doses.data ?? []).map((d): DoseLog => ({ id: d.id, medId: d.medication_id, date: d.scheduled_date, time: d.scheduled_time, status: d.status === "upcoming" ? "snoozed" : (d.status as DoseLog["status"]), at: d.updated_at })),
     orders: (orders.data ?? []).map((o): Order => {
       const it = (items.data ?? []).find((i) => i.order_id === o.id);
-      return { id: o.id, medId: it?.medication_id ?? "", qty: it?.quantity ?? 0, pharmacy: o.pharmacy, createdAt: o.created_at, status: "placed" };
+      return { id: o.id, medId: it?.medication_id ?? "", qty: it?.quantity ?? 0, pharmacy: o.pharmacy, createdAt: o.created_at, status: normalizeOrderStatus(o.status) };
     }),
     audit: (audit.data ?? []).map((a) => ({ at: a.created_at, text: a.action })),
   };

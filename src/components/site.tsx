@@ -3,6 +3,7 @@ import logo from "@/assets/medileaf-logo.png.asset.json";
 import { useEffect, useState, type ReactNode } from "react";
 import { getState, useStore } from "@/lib/store";
 import { cloudSignOut, useAuthReady } from "@/lib/cloud";
+import { useIsAdmin } from "@/lib/use-admin";
 
 export function Logo() {
   return (
@@ -51,6 +52,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const authReady = useAuthReady();
   const online = useOnline();
+  const { isAdmin } = useIsAdmin();
   useEffect(() => {
     if (!authReady) return;
     if (!getState().user) navigate({ to: "/login" });
@@ -69,6 +71,10 @@ export function AppShell({ children }: { children: ReactNode }) {
                 {n.label}
               </Link>
             ))}
+            {isAdmin && (
+              <Link to="/admin" className="rounded-full px-4 py-2 text-sm font-semibold hover:bg-muted"
+                activeProps={{ className: "bg-primary text-primary-foreground hover:bg-primary" }}>Admin</Link>
+            )}
           </nav>
           <div className="flex items-center gap-3 text-sm">
             <span className="flex items-center gap-1.5 text-muted-foreground" aria-live="polite">

@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import type { OrderStatus } from "./admin-logic";
 
 export type DoseStatus = "taken" | "skipped" | "missed" | "snoozed";
 export type Medication = {
@@ -21,7 +22,7 @@ export type Medication = {
   prescriptionItemId?: string | undefined;
 };
 export type DoseLog = { id: string; medId: string; date: string; time: string; status: DoseStatus; at: string };
-export type Order = { id: string; medId: string; qty: number; pharmacy: string; createdAt: string; status: "placed" };
+export type Order = { id: string; medId: string; qty: number; pharmacy: string; createdAt: string; status: OrderStatus };
 export type Prefs = {
   sound: boolean;
   snoozeMinutes: number;
