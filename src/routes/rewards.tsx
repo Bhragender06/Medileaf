@@ -5,6 +5,7 @@ import { useState, type FormEvent } from "react";
 import { AppShell, Field, PageTitle } from "@/components/site";
 import { useStore } from "@/lib/store";
 import { claimReward, getMyRewards, submitReturn } from "@/lib/rewards.functions";
+import { SnapAndCount } from "@/components/snap-and-count";
 import {
   CLAIM_STATUS_LABEL, MAX_SEEDS_PER_CLAIM, RETURN_ADDRESS, RETURN_STATUS_LABEL, REWARD_TIERS, SEEDS,
   canClaim, isClaimStatus, nextGoal, type RewardTier, type SeedId,
@@ -166,6 +167,8 @@ function ReturnForm({ onCancel, onDone }: { onCancel: () => void; onDone: (s: { 
   return (
     <form className="surface mt-6 space-y-5 p-8" onSubmit={(e: FormEvent) => { e.preventDefault(); m.mutate(); }}>
       <h2 className="text-3xl">What are you sending?</h2>
+      <SnapAndCount onApply={(r) => setV((cur) => ({ ...cur, wrappers: String(r.wrappers), bottles: String(r.bottles), expired: String(r.expired),
+        note: `AI photo count: ${r.wrappers} strips, ${r.bottles} bottles, ${r.expired} expired.${cur.note ? " " + cur.note : ""}`.slice(0, 300) }))} />
       <div className="grid gap-4 sm:grid-cols-3">
         {num("wrappers", "Empty blister packs / strips")}
         {num("bottles", "Empty pill bottles")}
