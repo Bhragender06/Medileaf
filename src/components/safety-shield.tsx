@@ -150,16 +150,19 @@ export function SafetyReportView({ report, loading, error, onRetry, title = "Saf
 }
 
 /** Self-running shield: checks `incoming` against `current` (or the current list alone) whenever the list changes. */
-export function SafetyShield({ current, incoming = [], title, compact = false }: {
-  current: SafetyMed[]; incoming?: SafetyMed[]; title?: string | undefined; compact?: boolean;
+export function SafetyShield({ current, incoming = [], title, compact = false, onReport }: {
+  current: SafetyMed[]; incoming?: SafetyMed[]; title?: string | undefined; compact?: boolean; onReport?: (r: SafetyReport | null) => void;
 }) {
   const { run, report, loading, error } = useSafetyCheck();
+  const notify = useRef(onReport);
+  notify.current = onReport;
+  useEffect(() => { notify.current?.(loading ? null : report); }, [report, loading]);
   const key = `${regimenKey(current)}>>${regimenKey(incoming)}`;
   const latest = useRef({ current, incoming });
   latest.current = { current, incoming };
   useEffect(() => {
     if (current.length + incoming.length === 0) return;
-    const t = setTimeout(() => { void run(latest.current.current, latest.current.incoming); }, 400);
+    const t = setTimeout(() => { void run(latest.current.current, latest.current.incoming); }, 900);
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, run]);
