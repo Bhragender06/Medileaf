@@ -1,11 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { AppShell, Confirm, Empty, PageTitle } from "@/components/site";
-import { useStore } from "@/lib/store";
+import { useIsAdmin } from "@/lib/use-admin";
 import {
-  getAdminAccess, getAdminOrders, getAdminUploads, getAdminUsers, getRefillAlerts, getUploadLink, setUserSuspended, updateOrderStatus,
+  getAdminOrders, getAdminUploads, getAdminUsers, getRefillAlerts, getUploadLink, setUserSuspended, updateOrderStatus,
 } from "@/lib/admin.functions";
 import { ORDER_STATUSES, ORDER_STATUS_LABEL, type OrderStatus } from "@/lib/admin-logic";
 
@@ -21,13 +21,6 @@ export const Route = createFileRoute("/admin")({
   }),
   component: () => <AppShell><Admin /></AppShell>,
 });
-
-export function useIsAdmin() {
-  const email = useStore((s) => s.user?.email);
-  const check = useServerFn(getAdminAccess);
-  const q = useQuery({ queryKey: ["admin-access", email], queryFn: () => check(), enabled: !!email, staleTime: 5 * 60_000, retry: false });
-  return { isAdmin: q.data?.isAdmin === true, loading: q.isLoading };
-}
 
 const tabs = [
   { id: "overview", label: "Overview" },
@@ -84,7 +77,7 @@ function AdminBody({ tab, go }: { tab: Tab; go: (t: Tab) => void }) {
 }
 
 type Q<T> = { data: T | undefined; isLoading: boolean; error: Error | null };
-function State<T>({ q, empty, children }: { q: Q<T[]>; empty: [string, string]; children: (rows: T[]) => React.ReactNode }) {
+function ListState<T>({ q, empty, children }: { q: Q<T[]>; empty: [string, string]; children: (rows: T[]) => ReactNode }) {
   if (q.isLoading) return <p className="text-muted-foreground">Loading…</p>;
   if (q.error) return <p role="alert" className="rounded-md bg-warning-soft p-4">Couldn't load this list: {q.error.message}</p>;
   if (!q.data?.length) return <Empty title={empty[0]} body={empty[1]} />;
@@ -142,7 +135,7 @@ function Orders({ q, compact }: { q: Q<OrderRow[]>; compact?: boolean }) {
         </div>
       )}
       {m.error && <p role="alert" className="mb-4 rounded-md bg-warning-soft p-3 text-sm">Couldn't update the order: {m.error.message}</p>}
-      <State q={{ ...q, data: q.data ? rows : undefined }} empty={["No orders yet", "Orders appear here when people reorder from their Refills page."]}>
+      <ListState q={{ ...q, data: q.data ? rows : undefined }} empty={["No orders yet", "Orders appear here when people reorder from their Refills page."]}>
         {(list) => (
           <ul className="divide-y rounded-xl border bg-card">
             {list.map((o) => (
@@ -159,7 +152,7 @@ function Orders({ q, compact }: { q: Q<OrderRow[]>; compact?: boolean }) {
             ))}
           </ul>
         )}
-      </State>
+      </ListState>
     </>
   );
 }
@@ -179,7 +172,7 @@ function Users({ q }: { q: Q<UserRow[]> }) {
     <>
       <input className="field mb-4 max-w-xs" placeholder="Search name or email" aria-label="Search users" value={search} onChange={(e) => setSearch(e.target.value)} />
       {m.error && <p role="alert" className="mb-4 rounded-md bg-warning-soft p-3 text-sm">Couldn't change this account: {m.error.message}</p>}
-      <State q={{ ...q, data: q.data ? rows : undefined }} empty={["No users found", "Accounts appear here once people sign up."]}>
+      <ListState q={{ ...q, data: q.data ? rows : undefined }} empty={["No users found", "Accounts appear here once people sign up."]}>
         {(list) => (
           <ul className="divide-y rounded-xl border bg-card">
             {list.map((u) => (
@@ -199,7 +192,7 @@ function Users({ q }: { q: Q<UserRow[]> }) {
             ))}
           </ul>
         )}
-      </State>
+      </ListState>
       <Confirm open={!!ask} danger={ask?.status !== "suspended"}
         title={ask?.status === "suspended" ? "Reactivate this account?" : "Suspend this account?"}
         body={ask?.status === "suspended" ? `${ask?.email} will be able to sign in again.` : `${ask?.email} won't be able to sign in until you reactivate them. Their data is kept.`}
@@ -211,7 +204,7 @@ function Users({ q }: { q: Q<UserRow[]> }) {
 }
 
 type UploadRow = Awaited<ReturnType<typeof getAdminUploads>>[number];
-const uploadLabel: Record<string, string> = { uploaded: "Waiting", processing: "Reading", processed: "Read", needs_review: "Needs review", failed: "Couldn't read" };
+const uploadLabel: Record<string, string> = { uploaded: "Waiting", processing: "Reading", needs_review: "Waiting for user to confirm", verified: "Confirmed by user", failed: "Couldn't read" };
 function Uploads({ q }: { q: Q<UploadRow[]> }) {
   const link = useServerFn(getUploadLink);
   const [err, setErr] = useState("");
@@ -224,7 +217,7 @@ function Uploads({ q }: { q: Q<UploadRow[]> }) {
   return (
     <>
       {err && <p role="alert" className="mb-4 rounded-md bg-warning-soft p-3 text-sm">{err}</p>}
-      <State q={q} empty={["No uploads yet", "Prescription photos appear here when people upload them."]}>
+      <ListState q={q} empty={["No uploads yet", "Prescription photos appear here when people upload them."]}>
         {(list) => (
           <ul className="divide-y rounded-xl border bg-card">
             {list.map((u) => (
@@ -240,7 +233,7 @@ function Uploads({ q }: { q: Q<UploadRow[]> }) {
             ))}
           </ul>
         )}
-      </State>
+      </ListState>
     </>
   );
 }
@@ -248,7 +241,7 @@ function Uploads({ q }: { q: Q<UploadRow[]> }) {
 type AlertRow = Awaited<ReturnType<typeof getRefillAlerts>>[number];
 function Alerts({ q }: { q: Q<AlertRow[]> }) {
   return (
-    <State q={q} empty={["No one is running low", "Medicines show up here when they reach the user's refill-alert level."]}>
+    <ListState q={q} empty={["No one is running low", "Medicines show up here when they reach the user's refill-alert level."]}>
       {(list) => (
         <ul className="divide-y rounded-xl border bg-card">
           {list.map((a) => (
@@ -262,6 +255,6 @@ function Alerts({ q }: { q: Q<AlertRow[]> }) {
           ))}
         </ul>
       )}
-    </State>
+    </ListState>
   );
 }

@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell, Empty, PageTitle } from "@/components/site";
 import { daysLeft, needsRefill, useStore } from "@/lib/store";
+import { ORDER_STATUS_LABEL } from "@/lib/admin-logic";
 
 export const Route = createFileRoute("/refills")({
   head: () => ({
@@ -44,7 +45,7 @@ function Refills() {
       {orders.length > 0 && <>
         <h2 className="mt-14 text-3xl">Recent orders</h2>
         <ul className="mt-4 divide-y rounded-xl border bg-card">
-          {orders.map((o) => <li key={o.id} className="flex justify-between px-5 py-3"><span>{meds.find((m) => m.id === o.medId)?.name ?? "Medicine"} × {o.qty} · {o.pharmacy}</span><span className="text-muted-foreground">{new Date(o.createdAt).toLocaleDateString()}</span></li>)}
+          {orders.map((o) => <li key={o.id} className="flex justify-between px-5 py-3"><span>{meds.find((m) => m.id === o.medId)?.name ?? "Medicine"} × {o.qty} · {o.pharmacy}</span><span className="text-muted-foreground">{ORDER_STATUS_LABEL[o.status]} · {new Date(o.createdAt).toLocaleDateString()}</span></li>)}
         </ul>
       </>}
     </>
