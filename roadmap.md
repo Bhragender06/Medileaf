@@ -10,3 +10,4 @@
 - [x] Eco rewards: wrapper/expired-med returns, 50-item seed counter, admin parcel checks + seed orders
 - [x] AI Safety Shield: drug/food/duplicate interaction check on upload, add medicine and Today page
 - [x] Snap & Count AI photo counting on Rewards return form
+- [x] Voice assistant (English/Hindi mic helper)
