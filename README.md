@@ -1,7 +1,7 @@
 # 🌿 Medileaf — Smart Adherence & Eco-Rewards Platform
 
 <p align="center">
-  <img src="src/assets/medileaf-logo.png" alt="Medileaf Logo" width="120" />
+  <img src="src/assets/Medileaf_ Rooted in Care.png" alt="Medileaf Logo" width="120" />
 </p>
 
 <p align="center">
